@@ -1,4 +1,0 @@
-[core]
-    remote = cch_riggins
-['remote "cch_riggins"']
-    url = https://gateway.us1.storjshare.io
