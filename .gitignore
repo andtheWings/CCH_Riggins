@@ -1,2 +1,5 @@
 
 .dvc/config
+.Rproj.user
+
+*.pptx
