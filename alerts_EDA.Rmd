@@ -1,0 +1,74 @@
+---
+title: "Exploratory Data Analysis of Alerts Dataset"
+author: "Daniel P. Riggins"
+date: "6/5/2021"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+```{r}
+alerts <- read_csv("data/alerts.csv")
+
+alerts$registration <- dmy_hms(alerts$registration)
+
+alerts <- alerts %>%
+    mutate(
+        year = year(registration),
+        month = month(registration),
+        day_of_month = day(registration),
+        day_of_week = wday(registration, label = TRUE),
+        hour = hour(registration)
+    )
+
+alerts
+```
+
+```{r}
+alerts
+```
+
+```{r}
+alerts %>% ggplot(aes(x = age)) +
+    geom_histogram()
+```
+
+```{r}
+alerts %>% ggplot(aes(x = day_of_week)) +
+    geom_bar()
+```
+
+```{r}
+alerts %>% ggplot(aes(x = hour)) +
+    geom_bar()
+```
+
+```{r}
+alerts %>% ggplot(aes(x = day_of_week, y = hour)) +
+    geom_bin2d()
+```
+
+
+```{r}
+total_alerts_by_client <- alerts %>% 
+    group_by(nonderived_id) %>%
+    summarize(total_alerts = max(totalerts_n)) %>%
+    ungroup()
+
+total_alerts_by_client %>%
+    ggplot(aes(x = total_alerts)) +
+    geom_histogram()
+```
+
+```{r}
+total_alerts_by_client %>%
+    summarise(
+        total_clients = n(),
+        mean_total_alerts = mean(total_alerts),
+        median_total_alerts = median(total_alerts)
+    )
+```
+
