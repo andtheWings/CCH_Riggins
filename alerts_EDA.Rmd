@@ -8,36 +8,68 @@ output: html_document
 ```{r}
 library(tidyverse)
 library(lubridate)
+library(DataExplorer)
 ```
 
 ```{r}
-alerts <- read_csv("data/alerts.csv")
+# Attribution: https://stackoverflow.com/a/39894310/3511838
+
+get_season <- function(input.date){
+  numeric.date <- 100*month(input.date)+day(input.date)
+  ## input Seasons upper limits in the form MMDD in the "break =" option:
+  cuts <- base::cut(numeric.date, breaks = c(0,0319,0620,0921,1220,1231)) 
+  # rename the resulting groups (could've been done within cut(...levels=) if "Winter" wasn't double
+  levels(cuts) <- c("Winter","Spring","Summer","Fall","Winter")
+  return(cuts)
+}
+```
+
+
+```{r}
+alerts_raw <- read_csv("data/alerts.csv")
 
 alerts$registration <- dmy_hms(alerts$registration)
 
-alerts <- alerts %>%
+alerts <- alerts_raw %>%
     mutate(
         year = year(registration),
         month = month(registration),
+        season = get_season(registration),
         day_of_month = day(registration),
-        day_of_week = wday(registration, label = TRUE),
-        hour = hour(registration)
+        day_of_week = lubridate::wday(registration, label = TRUE),
+        on_weekday = if_else(
+            condition = (day_of_week > "Sun" & day_of_week < "Sat"),
+            TRUE,
+            FALSE
+        ),
+        hour = hour(registration),
+        during_business_hours = if_else(
+            condition = (hour > 7 & hour < 16),
+            TRUE,
+            FALSE
+        ),
+        easily_reachable = if_else(
+            condition = (on_weekday == TRUE & during_business_hours == TRUE),
+            TRUE,
+            FALSE
+        )
     )
 
-alerts
+glimpse(alerts)
 ```
 
 ```{r}
-alerts
+#create_report(alerts)
 ```
 
 ```{r}
-alerts %>% ggplot(aes(x = age)) +
-    geom_histogram()
+alerts %>% 
+    ggplot(aes(x = age)) +
+    geom_bar()
 ```
 
 ```{r}
-alerts %>% ggplot(aes(x = day_of_week)) +
+alerts %>% ggplot(aes(x = day_of_month)) +
     geom_bar()
 ```
 
@@ -47,12 +79,6 @@ alerts %>% ggplot(aes(x = hour)) +
 ```
 
 ```{r}
-alerts %>% ggplot(aes(x = day_of_week, y = hour)) +
-    geom_bin2d()
-```
-
-
-```{r}
 total_alerts_by_client <- alerts %>% 
     group_by(nonderived_id) %>%
     summarize(total_alerts = max(totalerts_n)) %>%
@@ -60,7 +86,7 @@ total_alerts_by_client <- alerts %>%
 
 total_alerts_by_client %>%
     ggplot(aes(x = total_alerts)) +
-    geom_histogram()
+    geom_bar()
 ```
 
 ```{r}
@@ -70,5 +96,15 @@ total_alerts_by_client %>%
         mean_total_alerts = mean(total_alerts),
         median_total_alerts = median(total_alerts)
     )
+```
+
+```{r}
+alerts %>%
+    select(
+        season,
+        location,
+        easily_reachable
+    ) %>%
+    plot_bar(by = "easily_reachable")
 ```
 
